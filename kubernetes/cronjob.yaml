@@ -50,7 +50,7 @@ spec:
               seccompProfile:
                 type: RuntimeDefault
             volumeMounts:
-            - mountPath: /data
+            - mountPath: /backups
               name: jira-data
             - name: tmp
               mountPath: /tmp
