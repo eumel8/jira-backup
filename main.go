@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"path/filepath"
 
 	//"net/http/httputil"
 	"os"
@@ -181,7 +182,8 @@ func downloadBackupFile(cfg Config, client *http.Client, downloadURL string, dow
 		return "", err
 	}
 	defer res.Body.Close()
-	bckFile, err := os.Create(cfg.BackupDir + downloadFile)
+	filePath := filepath.Join(cfg.BackupDir, downloadFile)
+	bckFile, err := os.Create(filePath)
 	if err != nil {
 		return "", err
 	}
