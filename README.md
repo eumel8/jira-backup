@@ -13,7 +13,8 @@ You need to setup the program within a json file, or you use environment variabl
 JIRA_BASE_URL="" # Confluence Wiki URL, e.g. https://wiki.example.com
 JIRA_SPACE_KEY="" # Wiki Space Key, e.g. MYSPACE
 JIRA_TOKEN="" # Wiki Access Token
-JIRA_S3_BUCKET="" # S3 bucket where the backups are stores
+JIRA_BACKUP_DIR="" # Directory were backup files are stored (optional)
+JIRA_S3_BUCKET="" # S3 bucket where the backups are stores (optional)
 JIRA_S3_REGION="" # S3 region (optional)
 JIRA_S3_KEY_PREFIX="" # S3 key prefix (optional)
 JIRA_S3_ACCESS_KEY="" # S3 access key (optional)

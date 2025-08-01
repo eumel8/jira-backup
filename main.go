@@ -19,6 +19,7 @@ type Config struct {
 	BaseURL     string `json:"baseurl"`
 	SpaceKey    string `json:"spacekey"`
 	Token       string `json:"token"`
+	BackupDir   string `json:"backupdir"`
 	Timeout     int    `json:"timeout"`
 	S3Bucket    string `json:"s3bucket"`
 	S3KeyPrefix string `json:"s3keyprefix"`
@@ -56,6 +57,10 @@ func overrideWithEnv(config *Config) {
 
 	if token := os.Getenv("JIRA_TOKEN"); token != "" {
 		config.Token = token
+	}
+
+	if backupDir := os.Getenv("JIRA_BACKUP_DIR"); backupDir != "" {
+		config.BackupDir = backupDir
 	}
 
 	if s3Bucket := os.Getenv("JIRA_S3_BUCKET"); s3Bucket != "" {
@@ -164,8 +169,6 @@ func downloadBackupFile(cfg Config, client *http.Client, downloadURL string, dow
 		cfg.Timeout = 10
 	}
 
-	//client.Timeout = time.Duration(cfg.Timeout) * time.Minute
-
 	fullURL := cfg.BaseURL + downloadURL
 	req, _ := http.NewRequest("GET", fullURL, nil)
 	disposition := fmt.Sprintf("attachment; filename=%s", downloadFile)
@@ -178,18 +181,18 @@ func downloadBackupFile(cfg Config, client *http.Client, downloadURL string, dow
 		return "", err
 	}
 	defer res.Body.Close()
-	tmpFile, err := os.CreateTemp("", "confluence_backup_*.zip")
+	bckFile, err := os.Create(cfg.BackupDir + downloadFile)
 	if err != nil {
 		return "", err
 	}
-	defer tmpFile.Close()
+	defer bckFile.Close()
 
-	_, err = io.Copy(tmpFile, res.Body)
+	_, err = io.Copy(bckFile, res.Body)
 	if err != nil {
 		return "", err
 	}
 
-	return tmpFile.Name(), nil
+	return bckFile.Name(), nil
 }
 
 // TODO S3 upload
