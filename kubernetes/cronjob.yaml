@@ -8,6 +8,16 @@ spec:
     spec:
       template:
         spec:
+          affinity:
+            podAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                -     jira-backup
+            topologyKey: "kubernetes.io/hostname"
           containers:
           - name: backup
             image: ghcr.io/eumel8/jira-backup/jira-backup:latest

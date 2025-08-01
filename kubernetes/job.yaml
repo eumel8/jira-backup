@@ -9,6 +9,16 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - jira-backup
+            topologyKey: "kubernetes.io/hostname"
       containers:
       - name: backup
         image: ghcr.io/eumel8/jira-backup/jira-backup:latest
@@ -41,7 +51,7 @@ spec:
           seccompProfile:
             type: RuntimeDefault
         volumeMounts:
-        - mountPath: /data
+        - mountPath: /backups
           name: jira-data
         - name: tmp
           mountPath: /tmp

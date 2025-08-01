@@ -56,6 +56,19 @@ start the program on a cronjob or manually as often you needed:
 
 Only one space will be backup. Configure/copy for more instances.
 
+## kubernetes
+
+The project provides [docker images](ghcr.io/eumel8/jira-backup/jira-backup:latest)
+
+In the [kubernetes](kubernetes) folder are manifests to deploy on K8S
+
+* create-secret.sh - to create secret from config.json file
+* pvc to store the backups permanently
+* job/cronjob - periodically executes of backup jobs, adjust env vars or mount the secret before use
+* jira web deployment to expose the data on the web for easy downloads
+
+You can also expose further within an Ingress, but should be aware to expose confidential data too.
+
 ## ref
 
 see [confluence doc](https://confluence.atlassian.com/doc/back-up-a-space-or-multiple-spaces-1236929929.html)

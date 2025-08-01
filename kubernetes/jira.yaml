@@ -2,16 +2,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: jira
+  name: jira-web
 spec:
   selector:
     matchLabels:
-      app: jira
+      app: jira-backup
   replicas: 1
   template:
     metadata:
       labels:
-        app: jira
+        app: jira-backup
     spec:
       containers:
       - name: jira
@@ -60,10 +60,10 @@ spec:
 kind: Service
 apiVersion: v1
 metadata:
-  name: jira
+  name: jira-web
 spec:
   selector:
-    app: jira
+    app: jira-backup
   ports:
     - port: 80
       targetPort: 8080
