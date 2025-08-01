@@ -1,4 +1,12 @@
 {
     "baseurl": "https://wiki.example.com",
-    "spacekey": "MYSPACE"
+    "spacekey": "MYSPACE",
+    "token": "",
+    "backupdir": "",
+    "timeout": 10,
+    "s3bucket": "",
+    "s3keyprefix": "",
+    "s3region": "",
+    "s3accesskey": "",
+    "s3secretkey": ""
 }
