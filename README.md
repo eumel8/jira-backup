@@ -13,7 +13,8 @@ You need to setup the program within a json file, or you use environment variabl
 JIRA_BASE_URL="" # Confluence Wiki URL, e.g. https://wiki.example.com
 JIRA_SPACE_KEY="" # Wiki Space Key, e.g. MYSPACE
 JIRA_TOKEN="" # Wiki Access Token
-JIRA_S3_BUCKET="" # S3 bucket where the backups are stores
+JIRA_BACKUP_DIR="" # Directory were backup files are stored (optional)
+JIRA_S3_BUCKET="" # S3 bucket where the backups are stores (optional)
 JIRA_S3_REGION="" # S3 region (optional)
 JIRA_S3_KEY_PREFIX="" # S3 key prefix (optional)
 JIRA_S3_ACCESS_KEY="" # S3 access key (optional)
@@ -54,6 +55,19 @@ start the program on a cronjob or manually as often you needed:
 ```
 
 Only one space will be backup. Configure/copy for more instances.
+
+## kubernetes
+
+The project provides [docker images](ghcr.io/eumel8/jira-backup/jira-backup:latest)
+
+In the [kubernetes](kubernetes) folder are manifests to deploy on K8S
+
+* create-secret.sh - to create secret from config.json file
+* pvc to store the backups permanently
+* job/cronjob - periodically executes of backup jobs, adjust env vars or mount the secret before use
+* jira web deployment to expose the data on the web for easy downloads
+
+You can also expose further within an Ingress, but should be aware to expose confidential data too.
 
 ## ref
 

@@ -2,11 +2,14 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"path/filepath"
+
 	//"net/http/httputil"
 	"os"
 	"strconv"
@@ -17,6 +20,7 @@ type Config struct {
 	BaseURL     string `json:"baseurl"`
 	SpaceKey    string `json:"spacekey"`
 	Token       string `json:"token"`
+	BackupDir   string `json:"backupdir"`
 	Timeout     int    `json:"timeout"`
 	S3Bucket    string `json:"s3bucket"`
 	S3KeyPrefix string `json:"s3keyprefix"`
@@ -24,8 +28,6 @@ type Config struct {
 	S3AccessKey string `json:"s3accesskey"`
 	S3SecretKey string `json:"s3secretkey"`
 }
-
-var client = &http.Client{Timeout: 60 * time.Second}
 
 func loadConfigFromFile(path string) (Config, error) {
 
@@ -58,6 +60,10 @@ func overrideWithEnv(config *Config) {
 		config.Token = token
 	}
 
+	if backupDir := os.Getenv("JIRA_BACKUP_DIR"); backupDir != "" {
+		config.BackupDir = backupDir
+	}
+
 	if s3Bucket := os.Getenv("JIRA_S3_BUCKET"); s3Bucket != "" {
 		config.S3Bucket = s3Bucket
 	}
@@ -86,7 +92,7 @@ func overrideWithEnv(config *Config) {
 }
 
 // triggerBackup starts a backup job for the specified space
-func triggerBackup(cfg Config) (int, error) {
+func triggerBackup(cfg Config, client *http.Client) (int, error) {
 	url := fmt.Sprintf("%s/rest/api/backup-restore/backup/space", cfg.BaseURL)
 	bearer := fmt.Sprintf("ksso-token %s", cfg.Token)
 	payload := map[string]interface{}{
@@ -122,7 +128,7 @@ func triggerBackup(cfg Config) (int, error) {
 }
 
 // pollJob checks the status of the backup job until it is finished or failed
-func pollJob(cfg Config, jobID int) (string, error) {
+func pollJob(cfg Config, client *http.Client, jobID int) (string, error) {
 	url := fmt.Sprintf("%s/rest/api/backup-restore/jobs/%d", cfg.BaseURL, jobID)
 	for {
 		bearer := fmt.Sprintf("ksso-token %s", cfg.Token)
@@ -158,14 +164,10 @@ func pollJob(cfg Config, jobID int) (string, error) {
 }
 
 // download the backup file and store them to tmp directory
-func downloadBackupFile(cfg Config, downloadURL string, downloadFile string) (string, error) {
+func downloadBackupFile(cfg Config, client *http.Client, downloadURL string, downloadFile string) (string, error) {
 
 	if cfg.Timeout == 0 {
 		cfg.Timeout = 10
-	}
-
-	client := &http.Client{
-		Timeout: time.Duration(cfg.Timeout) * time.Minute,
 	}
 
 	fullURL := cfg.BaseURL + downloadURL
@@ -179,19 +181,21 @@ func downloadBackupFile(cfg Config, downloadURL string, downloadFile string) (st
 	if err != nil {
 		return "", err
 	}
+
 	defer res.Body.Close()
-	tmpFile, err := os.CreateTemp("", "confluence_backup_*.zip")
+	filePath := filepath.Join(cfg.BackupDir, downloadFile)
+	bckFile, err := os.Create(filePath)
 	if err != nil {
 		return "", err
 	}
-	defer tmpFile.Close()
+	defer bckFile.Close()
 
-	_, err = io.Copy(tmpFile, res.Body)
+	_, err = io.Copy(bckFile, res.Body)
 	if err != nil {
 		return "", err
 	}
 
-	return tmpFile.Name(), nil
+	return bckFile.Name(), nil
 }
 
 // TODO S3 upload
@@ -238,31 +242,46 @@ func main() {
 	if cfg.BaseURL == "" || cfg.SpaceKey == "" || cfg.Token == "" {
 		log.Fatal("❌ Missing required configuration: BaseURL, SpaceKey, or Token must be set")
 	}
+
+	// Initialize the HTTP client with the correct timeout after config is loaded
+	client := &http.Client{
+		Timeout: time.Duration(cfg.Timeout) * time.Minute,
+		Transport: &http.Transport{
+			// use system proxy settings
+			Proxy: http.ProxyFromEnvironment,
+			// Disable HTTP/2 to avoid issues with some Jira instances
+			ForceAttemptHTTP2: false,
+			// Disable TLS verification for self-signed certificates (not recommended for production)
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
 	log.Println("▶️ Triggering backup...")
-	jobID, err := triggerBackup(cfg)
+	jobID, err := triggerBackup(cfg, client)
 	if err != nil {
 		log.Fatalf("❌ Failed to start backup: %v", err)
 	}
 
 	log.Printf("⏩ Backup job started: %d", jobID)
-	downloadFile, err := pollJob(cfg, jobID)
+	downloadFile, err := pollJob(cfg, client, jobID)
 	if err != nil {
 		log.Fatalf("❌ Polling failed: %v", err)
 	}
 
 	downloadURL := fmt.Sprintf("/rest/api/backup-restore/jobs/%d/download", jobID)
 
-	log.Println("⌛ Downloading backup file...")
-	localPath, err := downloadBackupFile(cfg, downloadURL, downloadFile)
+	log.Println("⬇️ Downloading backup file...")
+	localPath, err := downloadBackupFile(cfg, client, downloadURL, downloadFile)
 	if err != nil {
 		log.Fatalf("❌ Download failed: %v", err)
 	}
 	defer os.Remove(localPath)
 
-	log.Println("🔄 Uploading to S3... ", localPath)
+	log.Println("🔄 Uploading to S3 (todo)... ", localPath)
+	log.Println("✅ Backup complete.")
+	os.Exit(0) // Exit early for testing purposes
 	if err := uploadToS3(cfg, localPath); err != nil {
 		log.Fatalf("❌ S3 upload failed: %v", err)
 	}
 
-	log.Println("✅ Backup complete.")
 }
