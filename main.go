@@ -265,6 +265,8 @@ func cleanupOldBackups(backupDir, spaceKey string, retentionDays int) error {
             continue
         }
 
+		log.Println("Cutoff ", cutoff)
+		log.Println("modtime ", info.ModTime())
         if info.ModTime().Before(cutoff) {
             log.Printf("Deleting old backup: %s", name)
             if err := os.Remove(fullPath); err != nil {
