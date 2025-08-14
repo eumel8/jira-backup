@@ -13,20 +13,22 @@ import (
 	//"net/http/httputil"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
 type Config struct {
-	BaseURL     string `json:"baseurl"`
-	SpaceKey    string `json:"spacekey"`
-	Token       string `json:"token"`
-	BackupDir   string `json:"backupdir"`
-	Timeout     int    `json:"timeout"`
-	S3Bucket    string `json:"s3bucket"`
-	S3KeyPrefix string `json:"s3keyprefix"`
-	S3Region    string `json:"s3region"`
-	S3AccessKey string `json:"s3accesskey"`
-	S3SecretKey string `json:"s3secretkey"`
+	BaseURL       string `json:"baseurl"`
+	SpaceKey      string `json:"spacekey"`
+	Token         string `json:"token"`
+	BackupDir     string `json:"backupdir"`
+	Timeout       int    `json:"timeout"`
+	S3Bucket      string `json:"s3bucket"`
+	S3KeyPrefix   string `json:"s3keyprefix"`
+	S3Region      string `json:"s3region"`
+	S3AccessKey   string `json:"s3accesskey"`
+	S3SecretKey   string `json:"s3secretkey"`
+	RetentionDays int  `json:"retentiondays"`
 }
 
 func loadConfigFromFile(path string) (Config, error) {
@@ -87,6 +89,12 @@ func overrideWithEnv(config *Config) {
 	if timeoutStr := os.Getenv("JIRA_TIMEOUT"); timeoutStr != "" {
 		if timeout, err := strconv.Atoi(timeoutStr); err == nil {
 			config.Timeout = timeout
+		}
+	}
+
+	if retentionDaysStr := os.Getenv("JIRA_RENTENTION_DAYS"); retentionDaysStr != "" {
+		if retentionDays, err := strconv.Atoi(retentionDaysStr); err == nil {
+			config.RetentionDays = retentionDays
 		}
 	}
 }
@@ -223,6 +231,50 @@ func uploadToS3(cfg Config, filePath string) error {
 	//return err
 }
 
+func cleanupOldBackups(backupDir, spaceKey string, retentionDays int) error {
+    if retentionDays <= 0 {
+        log.Println("Retention disabled, skipping cleanup.")
+        return nil
+    }
+
+    files, err := os.ReadDir(backupDir)
+    if err != nil {
+        return fmt.Errorf("cannot read backup dir: %w", err)
+    }
+
+    cutoff := time.Now().AddDate(0, 0, -retentionDays)
+    prefix := fmt.Sprintf("Confluence-space-export-%s-", spaceKey)
+    suffix := ".zip"
+
+    for _, f := range files {
+        if f.IsDir() {
+            continue
+        }
+
+        name := f.Name()
+        if !strings.HasPrefix(name, prefix) || !strings.HasSuffix(name, suffix) {
+            // not a backup file, skip
+            continue
+        }
+
+        fullPath := filepath.Join(backupDir, name)
+        info, err := os.Stat(fullPath)
+        if err != nil {
+            log.Printf("Skipping file (stat error): %s", name)
+            continue
+        }
+
+        if info.ModTime().Before(cutoff) {
+            log.Printf("Deleting old backup: %s", name)
+            if err := os.Remove(fullPath); err != nil {
+                log.Printf("Failed to delete %s: %v", name, err)
+            }
+        }
+    }
+    return nil
+}
+
+
 func main() {
 
 	cfgFile := "config.json"
@@ -275,6 +327,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("❌ Download failed: %v", err)
 	}
+
+	if err := cleanupOldBackups(cfg.BackupDir, cfg.SpaceKey, cfg.RetentionDays); err != nil {
+   		log.Printf("Cleanup warning: %v", err)
+	}
+
 	defer os.Remove(localPath)
 
 	log.Println("🔄 Uploading to S3 (todo)... ", localPath)
