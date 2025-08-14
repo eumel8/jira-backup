@@ -233,13 +233,13 @@ func uploadToS3(cfg Config, filePath string) error {
 
 func cleanupOldBackups(backupDir, spaceKey string, retentionDays int) error {
     if retentionDays <= 0 {
-        log.Println("Retention disabled, skipping cleanup.")
+        log.Println("💤 Retention disabled, skipping cleanup.")
         return nil
     }
 
     files, err := os.ReadDir(backupDir)
     if err != nil {
-        return fmt.Errorf("cannot read backup dir: %w", err)
+        return fmt.Errorf("⚠️ cannot read backup dir: %w", err)
     }
 
     cutoff := time.Now().AddDate(0, 0, -retentionDays)
@@ -252,7 +252,6 @@ func cleanupOldBackups(backupDir, spaceKey string, retentionDays int) error {
         }
 
         name := f.Name()
-		log.Printf("Check backup file: %s", name)
         if !strings.HasPrefix(name, prefix) || !strings.HasSuffix(name, suffix) {
             // not a backup file, skip
             continue
@@ -261,16 +260,14 @@ func cleanupOldBackups(backupDir, spaceKey string, retentionDays int) error {
         fullPath := filepath.Join(backupDir, name)
         info, err := os.Stat(fullPath)
         if err != nil {
-            log.Printf("Skipping file (stat error): %s", name)
+            log.Printf("❓Skipping file (stat error): %s", name)
             continue
         }
 
-		log.Println("Cutoff ", cutoff)
-		log.Println("modtime ", info.ModTime())
         if info.ModTime().Before(cutoff) {
-            log.Printf("Deleting old backup: %s", name)
+            log.Printf("🗑️ Deleting old backup: %s", name)
             if err := os.Remove(fullPath); err != nil {
-                log.Printf("Failed to delete %s: %v", name, err)
+                log.Printf("⚠️ Failed to delete %s: %v", name, err)
             }
         }
     }
@@ -333,7 +330,7 @@ func main() {
 
 	log.Println("🧹 Cleanup old backups")
 	if err := cleanupOldBackups(cfg.BackupDir, cfg.SpaceKey, cfg.RetentionDays); err != nil {
-   		log.Printf("Cleanup warning: %v", err)
+   		log.Printf("❓ Cleanup warning: %v", err)
 	}
 
 	defer os.Remove(localPath)
