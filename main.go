@@ -252,6 +252,7 @@ func cleanupOldBackups(backupDir, spaceKey string, retentionDays int) error {
         }
 
         name := f.Name()
+		log.Printf("Check backup file: %s", name)
         if !strings.HasPrefix(name, prefix) || !strings.HasSuffix(name, suffix) {
             // not a backup file, skip
             continue
@@ -328,6 +329,7 @@ func main() {
 		log.Fatalf("❌ Download failed: %v", err)
 	}
 
+	log.Println("🧹 Cleanup old backups")
 	if err := cleanupOldBackups(cfg.BackupDir, cfg.SpaceKey, cfg.RetentionDays); err != nil {
    		log.Printf("Cleanup warning: %v", err)
 	}
