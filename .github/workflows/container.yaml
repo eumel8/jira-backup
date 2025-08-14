@@ -2,8 +2,12 @@ name: Container
 
 on:
   push:
-#    tags:
-#    - "*"
+    tags:        
+      - '*'
+    branches:
+      - dev
+  release:
+    types: [created]
     
 jobs:
   build:

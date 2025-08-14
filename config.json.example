@@ -8,5 +8,6 @@
     "s3keyprefix": "",
     "s3region": "",
     "s3accesskey": "",
-    "s3secretkey": ""
+    "s3secretkey": "",
+    "retentiondays": 10
 }

@@ -19,6 +19,7 @@ JIRA_S3_REGION="" # S3 region (optional)
 JIRA_S3_KEY_PREFIX="" # S3 key prefix (optional)
 JIRA_S3_ACCESS_KEY="" # S3 access key (optional)
 JIRA_S3_SECRET_KEY="" # S3 secret key (optional)
+JIRA_RENTENTION_DAYS= # how many days are backupfile stored (optional)
 JIRA_TIMEOUT=10 # timeout while downloading backup file, e.g. 10 min
 JIRA_CONFIG="config.json" # json file from which the variables optional load
 ```
