@@ -70,6 +70,40 @@ In the [kubernetes](kubernetes) folder are manifests to deploy on K8S
 
 You can also expose further within an Ingress, but should be aware to expose confidential data too.
 
+## powershell (windows)
+
+* download and extract windows version of jira-backup from [Release Page](https://github.com/eumel8/jira-backup/releases)
+* create an API token on your Wiki
+* set minimal env vars:
+
+```shell
+[Environment]::SetEnvironmentVariable('JIRA_BASE_URL','https://wiki.example.com')
+[Environment]::SetEnvironmentVariable('JIRA_SPACE_KEY','MYWIKI')
+[Environment]::SetEnvironmentVariable('JIRA_TOKEN','xxxxx')
+```
+
+* perform the backup
+
+```shell
+PS .\jira-backup.exe
+2025/09/15 14:00:09 ▶️ Triggering backup...
+2025/09/15 14:00:09 ⏩ Backup job started: 3422846982
+2025/09/15 14:00:09 ⌛ Status  PROCESSING
+2025/09/15 14:00:09 🔄 Backup in progress...
+2025/09/15 14:00:14 ⌛ Status  FINISHED
+2025/09/15 14:00:14 ⬇️ Downloading backup file...
+2025/09/15 14:00:14 🧹 Cleanup old backups
+2025/09/15 14:00:14 💤 Retention disabled, skipping cleanup.
+2025/09/15 14:00:14 🔄 Uploading to S3 (todo)...  Confluence-space-export-MYWIKI-2025-09-15-14-00-09-715.xml.zip
+2025/09/15 14:00:14 ✅ Backup complete.
+PS > dir
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----        15.09.2025     14:00           9783 Confluence-space-export-MYWIKI-2025-09-15-14-00-09-715.xml.zip
+-a----        14.08.2025     17:32        8864768 jira-backup.exe
+```
+
 ## ref
 
 see [confluence doc](https://confluence.atlassian.com/doc/back-up-a-space-or-multiple-spaces-1236929929.html)
